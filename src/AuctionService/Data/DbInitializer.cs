@@ -17,7 +17,7 @@ public class DbInitializer
 
         if(context.Auctions.Any())
         {
-            Console.WriteLine("Data already exists in the database");
+            Console.WriteLine("------------Data already exists in the database--------------");
             return;
         }
         var auctions = new List<Auction>()
