@@ -15,7 +15,7 @@ namespace AuctionService.Data.Migrations
                 name: "Auctions",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
                     ReservePrice = table.Column<int>(type: "integer", nullable: false),
                     Seller = table.Column<string>(type: "text", nullable: true),
                     Winner = table.Column<string>(type: "text", nullable: true),
@@ -28,14 +28,14 @@ namespace AuctionService.Data.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Auctions", x => x.id);
+                    table.PrimaryKey("PK_Auctions", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
                 name: "Items",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Make = table.Column<string>(type: "text", nullable: true),
                     Model = table.Column<string>(type: "text", nullable: true),
                     Year = table.Column<int>(type: "integer", nullable: false),
@@ -46,12 +46,12 @@ namespace AuctionService.Data.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Items", x => x.id);
+                    table.PrimaryKey("PK_Items", x => x.Id);
                     table.ForeignKey(
                         name: "FK_Items_Auctions_AuctionId",
                         column: x => x.AuctionId,
                         principalTable: "Auctions",
-                        principalColumn: "id",
+                        principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
