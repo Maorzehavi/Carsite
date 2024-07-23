@@ -3,6 +3,8 @@ using AuctionService.DTOs;
 using AuctionService.Entities;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Contracts;
+using MassTransit;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,11 +16,14 @@ public class AuctionsController : ControllerBase
 {
     private readonly AuctionDbContext _context;
     private readonly IMapper _mapper;
+    public readonly IPublishEndpoint _publishEndpoint;
 
-    public AuctionsController(AuctionDbContext context, IMapper mapper)
+    public AuctionsController(AuctionDbContext context, IMapper mapper,
+     IPublishEndpoint publishEndpoint)
     {
         _context = context;
         _mapper = mapper;
+        _publishEndpoint = publishEndpoint;
     }
     [HttpGet]
     public async Task<ActionResult<List<AuctionDto>>> GetAllActions(string date)
@@ -40,10 +45,7 @@ public class AuctionsController : ControllerBase
         .Include(x => x.Item)
         .FirstOrDefaultAsync(x => x.Id == id);
 
-        if (auction == null)
-        {
-            return NotFound();
-        }
+        if (auction == null) return NotFound();
 
         return Ok(_mapper.Map<AuctionDto>(auction));
 
@@ -56,28 +58,28 @@ public class AuctionsController : ControllerBase
         // TODO: add current user as Seller
         auction.Seller = "TEST";
         _context.Auctions.Add(auction);
+
         var result = await _context.SaveChangesAsync() > 0;
-        if (!result)
-        {
-            return BadRequest();
-        }
-        return CreatedAtAction(nameof(GetAcutionById), new { id = auction.Id }, _mapper.Map<AuctionDto>(auction));
+
+        var newAuction = _mapper.Map<AuctionDto>(auction);
+
+        if (!result) return BadRequest();
+
+        await _publishEndpoint.Publish(_mapper.Map<AuctionCreated>(newAuction));
+
+        return CreatedAtAction(nameof(GetAcutionById), newAuction);
     }
 
     [HttpPut("{id}")]
     public async Task<ActionResult> UpdateAuction(Guid id, UpdateAuctionDto updateAuctionDto)
     {
         var auction = await _context.Auctions.Include(x => x.Item).FirstOrDefaultAsync(x => x.Id == id);
-        if (auction == null)
-        {
-            return NotFound();
-        }
+        if (auction == null) return NotFound();
+
 
         // Ensure that the auction item is not null
-        if (auction.Item == null)
-        {
-            auction.Item = new Item(); // Initialize a new AuctionItem if it is null
-        }
+        if (auction.Item == null) auction.Item = new Item(); // Initialize a new AuctionItem if it is null
+
 
         // TODO: check if current user is the seller
 
@@ -94,6 +96,7 @@ public class AuctionsController : ControllerBase
             return BadRequest(e.Message);
         }
 
+
         var result = await _context.SaveChangesAsync() > 0;
         if (!result)
         {
@@ -106,19 +109,15 @@ public class AuctionsController : ControllerBase
     public async Task<ActionResult> DeleteAuction(Guid id)
     {
         var auction = await _context.Auctions.FindAsync(id);
-        if (auction == null)
-        {
-            return NotFound();
-        }
+        if (auction == null) return NotFound();
+
 
         // TODO: check if current user is the seller
 
         _context.Auctions.Remove(auction);
         var result = await _context.SaveChangesAsync() > 0;
-        if (!result)
-        {
-            return BadRequest("Failed to delete auction");
-        }
+        if (!result) return BadRequest("Failed to delete auction");
+
         return Ok();
     }
 
