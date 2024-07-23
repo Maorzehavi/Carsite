@@ -59,15 +59,16 @@ public class AuctionsController : ControllerBase
         auction.Seller = "TEST";
         _context.Auctions.Add(auction);
 
-        var result = await _context.SaveChangesAsync() > 0;
-
         var newAuction = _mapper.Map<AuctionDto>(auction);
-
-        if (!result) return BadRequest();
 
         await _publishEndpoint.Publish(_mapper.Map<AuctionCreated>(newAuction));
 
-        return CreatedAtAction(nameof(GetAcutionById), newAuction);
+        var result = await _context.SaveChangesAsync() > 0;
+
+        if (!result) return BadRequest();
+
+         return CreatedAtAction(nameof(GetAcutionById),
+            new { auction.Id }, newAuction);
     }
 
     [HttpPut("{id}")]
